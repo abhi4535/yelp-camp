@@ -4,6 +4,7 @@ const path = require("path");
 const methodOverride = require("method-override");
 const mongoose = require("mongoose");
 const campground = require("./models/campground");
+const ejsMate = require("ejs-mate");
 mongoose.connect("mongodb://127.0.0.1:27017/yelp-camp");
 
 const db = mongoose.connection;
@@ -12,6 +13,7 @@ db.once("open", () => {
   console.log("database connected");
 });
 
+app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -61,6 +63,7 @@ app.delete("/campgrounds/:id", async (req, res) => {
   await campground.findByIdAndDelete(id);
   res.redirect("/campgrounds");
 });
+
 app.listen(3000, () => {
   console.log("serving port 3000");
 });
