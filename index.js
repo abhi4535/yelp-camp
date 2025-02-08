@@ -6,6 +6,9 @@ const mongoose = require("mongoose");
 const campground = require("./models/campground");
 const ejsMate = require("ejs-mate");
 const wrapAsync = require("./utils/wrapAsync");
+const ExpressError = require("./utils/ExpressError");
+const joi = require("joi");
+const { campgroundSchema } = require("./Schemas");
 mongoose.connect("mongodb://127.0.0.1:27017/yelp-camp");
 
 const db = mongoose.connection;
@@ -20,6 +23,16 @@ app.set("views", path.join(__dirname, "views"));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
+
+const validateCampground = (req, res, next) => {
+  const { error } = campgroundSchema.validate(req.body);
+  if (error) {
+    const msg = error.details.map((err) => err.message).join(",");
+    throw new ExpressError(msg, 400);
+  } else {
+    next();
+  }
+};
 
 app.get("/", (req, res) => {
   res.render("home");
@@ -39,7 +52,9 @@ app.get("/campgrounds/new", (req, res) => {
 
 app.post(
   "/campgrounds",
+  validateCampground,
   wrapAsync(async (req, res, next) => {
+    // if (!req.bogy.campground) throw new ExpressError("invalid input", 400);
     const newCamp = new campground(req.body.campground);
     await newCamp.save();
     res.redirect(`/campgrounds/${newCamp._id}`);
@@ -65,6 +80,7 @@ app.get(
 
 app.put(
   "/campgrounds/:id",
+  validateCampground,
   wrapAsync(async (req, res, next) => {
     const { id } = req.params;
     const camp = await campground.findByIdAndUpdate(id, {
@@ -83,8 +99,13 @@ app.delete(
   })
 );
 
+app.all(/(.*)/, (req, res, next) => {
+  next(new ExpressError("page not found", 404));
+});
+
 app.use((err, req, res, next) => {
-  res.send("oh boy, something went wrong!");
+  const { statusCode = 500, message = "something went wrong" } = err;
+  res.status(statusCode).render("error");
 });
 
 app.listen(3000, () => {
