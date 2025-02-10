@@ -8,7 +8,8 @@ const ejsMate = require("ejs-mate");
 const wrapAsync = require("./utils/wrapAsync");
 const ExpressError = require("./utils/ExpressError");
 const joi = require("joi");
-const { campgroundSchema } = require("./Schemas");
+const { campgroundSchema, reviewSchema } = require("./Schemas");
+const Review = require("./models/review");
 mongoose.connect("mongodb://127.0.0.1:27017/yelp-camp");
 
 const db = mongoose.connection;
@@ -26,6 +27,16 @@ app.use(methodOverride("_method"));
 
 const validateCampground = (req, res, next) => {
   const { error } = campgroundSchema.validate(req.body);
+  if (error) {
+    const msg = error.details.map((err) => err.message).join(",");
+    throw new ExpressError(msg, 400);
+  } else {
+    next();
+  }
+};
+
+const validateReview = (req, res, next) => {
+  const { error } = reviewSchema.validate(req.body);
   if (error) {
     const msg = error.details.map((err) => err.message).join(",");
     throw new ExpressError(msg, 400);
@@ -99,13 +110,26 @@ app.delete(
   })
 );
 
+app.post(
+  "/campgrounds/:id/reviews",
+  validateReview,
+  wrapAsync(async (req, res, next) => {
+    const camp = await campground.findById(req.params.id);
+    const review = new Review(req.body.eview);
+    camp.reviews.push(review);
+    await review.save();
+    await camp.save();
+    res.redirect(`/campgrounds/${camp._id}`);
+  })
+);
+
 app.all(/(.*)/, (req, res, next) => {
   next(new ExpressError("page not found", 404));
 });
 
 app.use((err, req, res, next) => {
   const { statusCode = 500, message = "something went wrong" } = err;
-  res.status(statusCode).render("error");
+  res.status(statusCode).render("error", { err });
 });
 
 app.listen(3000, () => {
