@@ -11,7 +11,10 @@
   </head>
   <body class="d-flex vh-100 flex-column">
     <div class="container sticky-top"><%- include('../partials/navbar') %></div>
-    <main class="container mt-3"><%- body %></main>
+
+    <main class="container mt-3">
+      <%- include('../partials/flash') %><%- body %>
+    </main>
     <%- include('../partials/footer') %>
     <script
       src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
@@ -23,24 +26,7 @@
       integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
       crossorigin="anonymous"
     ></script>
-    <script>
-      const forms = document.querySelectorAll(".validated-form");
 
-      // Loop over them and prevent submission
-      Array.from(forms).forEach((form) => {
-        form.addEventListener(
-          "submit",
-          (event) => {
-            if (!form.checkValidity()) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
-
-            form.classList.add("was-validated");
-          },
-          false
-        );
-      });
-    </script>
+    <script src="/javascript/validateForm.js"></script>
   </body>
 </html>
